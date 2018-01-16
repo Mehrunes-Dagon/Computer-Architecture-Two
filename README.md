@@ -81,48 +81,73 @@ OpenGL, DirectX, WebGL. CUDA, GLSL
 
 Add interrupts to the LS-8 emulator from the Computer Architecture 1.
 
-You must have implemented a CPU stack before doing this.
+**You must have implemented a CPU stack before doing this.**
 
+See the [LS-8
+spec](https://github.com/LambdaSchool/Computer-Architecture-One/blob/master/LS8-SPEC.md)
+for details on implementation.
 
-The CPU will have 8 interrupts, 0-7.
+The LS-8 should fire a timer interrupt one time per second. This could
+be implemented with `setInterval()`, where the handler sets bit 0 of the
+IS register (R6).
 
-* Use another numeric register, e.g. 254, for the Interrupt Status register
-  (IS). This shows you which interrupts have occurred.
+Later in the main instruction loop, you'll check to see if bit 0 of the
+IS register is set, and if it is, you'll push the registers on the
+stack, look up the interrupt handler address in the interrupt vector
+table at address `0xF8`, and set the PC to it. Execution continues in
+the interrupt handler.
 
-* Use yet another numeric register, e.g. 253, for the Interrupt Mask register
-  (IM). The mask is used to block interrupts you're not interested in.
-  Initialize this to 0 so all interrupts are blocked.
-
-* Set up an _interrupt vector table_ in RAM. This is a table of addresses for
-  each of the 8 interrupts. When an interrupt occurs, the PC will jump to the
-  address listed in the interrupt vector table for that particular interrupt.
-
-  Put the 8 addresses at the top of RAM. But remember to initialize your stack
-  pointer to start _below_ the interrupt vector table so you don't overwrite it
-  the first time you `PUSH` or `CALL`.
-
-The easiest interrupt to set up would be a timer interrupt. Let's call that
-interrupt #0. Once per second, say, it issues an interrupt that the CPU has to
-handle. You can use `setInterval()` to set bit #0 in the IS register.
-
-```javascript
-this.reg[IS] |= 1; // set bit #0
-```
-
-The CPU should check for interrupts before executing the next instruction.
+Then when an `IRET` instruction is found, the registers and PC are
+popped off the stack and execution continues normally.
 
 ## Example
 
-The assembly program is interested in getting timer interrupts, so it sets the
-IM register (253) to `00000001` with `SET` and `SAVE`.
+This code prints out the letter `A` from the timer interrupt handler
+that fires once per second.
 
-The `setInterval()` timer fires and sets bit #0 in IS.
+```
+# interrupts.ls8
+
+00000100 # LDI R0,0xF8  R0 holds the interrupt vector for I0 (timer)
+00000000
+11111000
+00000100 # LDI R1,17    R1 holds the address of the handler
+00000001
+00010001
+00001001 # ST R0,R1     Store handler addr in int vector
+00000000
+00000001
+00000100 # LDI R5,1     Enable timer interrupts
+00000101
+00000001
+00000100 # LDI R0,15    Load R0 with the spin loop address
+00000000
+00001111
+# Address 15
+00010001 # JMP R0       Infinite spin loop right here
+00000000
+
+# Interrupt handler
+# Address 17
+00000100 # LDI R0,65    Load R0 with 'A'
+00000000
+01000001
+00000111 # PRA R0       Print it
+00000000
+00011010 # IRET         Return from interrupt
+```
+
+
+The assembly program is interested in getting timer interrupts, so it sets the
+IM register to `00000001` with `LDI R5,1`.
+
+The interrupt `setInterval()` timer fires and sets bit #0 in IS.
 
 At the beginning of `tick()`, the CPU checks to see if interrupts are enabled.
 If not, it continues processing instructions as normal. Otherwise:
 
 Bitwise-AND the IM register with the IS register. This masks out all the
-interrupts we're interested in:
+interrupts we're not interested in, leaving the ones we are interested in:
 
 ```javascript
 let interrupts = this.reg[IM] & this.reg[IS];
@@ -142,27 +167,4 @@ for (let i = 0; i < 8; i++) {
 (If the no interrupt bits are set, then stop processing interrupts and continue
 executing the next instruction as per usual.)
 
-If `interruptHappened`:
-
-Disable interrupts (this is just setting a boolean flag in the CPU).
-
-Clear the bit in the `IS` register for this interrupt now that we're handling
-it.
-
-Push the current `PC` on the stack.
-
-Look up the address to jump to in the interrupt vector table (this will be the
-*i*th entry).
-
-Set the `PC` to that address.
-
-We are now handling the interrupt.
-
-Continue processing instructions as normal until we hit an `RETI` instruction
-(return from interrupt).
-
-On the `RETI`:
-
-Pop the stack and store the result in `PC`.
-
-Enable interrupts.
+If `interruptHappened`, check the LS-8 spec for details on what to do.
