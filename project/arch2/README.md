@@ -1,19 +1,21 @@
+//init
+
 # Part 1: Short Answer, Optional
 
-1. The minimum seek time for an HDD is 9msec, and the maximum seek time is
-   90msec. The block size of this HDD is 4KB. How long on average does it take
-   to read 100MB of data?
+1.  The minimum seek time for an HDD is 9msec, and the maximum seek time is
+    90msec. The block size of this HDD is 4KB. How long on average does it take
+    to read 100MB of data?
 
-2. Describe a TCP/IP packet in detail. Describe the header, how many bytes it
-   is, and which components it contains. What data can come after the header?
+2.  Describe a TCP/IP packet in detail. Describe the header, how many bytes it
+    is, and which components it contains. What data can come after the header?
 
-3. How does the network protocol guarantee that a TCP/IP packet is complete
-   after transmission?
+3.  How does the network protocol guarantee that a TCP/IP packet is complete
+    after transmission?
 
-4. What is the difference between TCP and IP?
+4.  What is the difference between TCP and IP?
 
-5. Why is 3d performance so much higher with a graphics card than without?
-   Modern CPUs are extremely fast, what is limiting their performance?
+5.  Why is 3d performance so much higher with a graphics card than without?
+    Modern CPUs are extremely fast, what is limiting their performance?
 
 # Part 2: Add Interrupts to the LS-8, Optional
 
@@ -81,7 +83,6 @@ that fires once per second.
 00000000
 00001011 # IRET        Return from interrupt
 ```
-
 
 The assembly program is interested in getting timer interrupts, so it sets the
 IM register to `00000001` with `LDI R5,1`.
